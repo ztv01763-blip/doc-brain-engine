@@ -99,14 +99,26 @@ function Home({ state, money, go }: { state: State; money: (n: number) => string
   const collected = state.customers.flatMap((c) => c.entries).filter((e) => e.type === "payment").reduce((s, e) => s + e.amount, 0);
   const due = findDue(state.customers, state.settings);
   const pending = state.queue.filter((q) => q.status === "pending").length;
+
+  const today = new Date().toDateString();
+  const isToday = (d: string) => new Date(d).toDateString() === today;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const owing = state.customers.filter((c) => balanceOf(c) > 0);
+  const receivedToday = state.customers.flatMap((c) => c.entries).filter((e) => e.type === "payment" && isToday(e.date)).reduce((s, e) => s + e.amount, 0);
+  const paidTodayCount = state.customers.filter((c) => c.entries.some((e) => e.type === "payment" && isToday(e.date))).length;
+  const dueToday = owing.filter((c) => c.promiseDate === todayStr);
+  const promised = owing.filter((c) => c.promiseDate && c.promiseDate > todayStr);
+  const followUps = [...due.map((d) => d.customer)].sort((a, b) => balanceOf(b) - balanceOf(a)).slice(0, 5);
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Total receivable" value={money(total)} tone="primary" />
-        <Stat label="Collected" value={money(collected)} tone="accent" />
+        <Stat label="Received today" value={money(receivedToday)} tone="accent" />
         <Stat label="Overdue customers" value={String(due.length)} tone="destructive" />
-        <Stat label="Reminders ready" value={String(pending)} />
+        <Stat label="Due today" value={money(dueToday.reduce((s, c) => s + balanceOf(c), 0))} />
       </div>
+
       <div className="rounded-2xl border bg-hero p-6">
         <div className="flex items-center gap-2 text-primary"><Zap className="h-5 w-5" /><span className="text-sm font-semibold">Autopilot</span></div>
         <h2 className="mt-2 text-2xl font-bold">{due.length ? `${due.length} customers need a reminder` : "Sab clear hai — koi overdue nahi"}</h2>
@@ -116,6 +128,55 @@ function Home({ state, money, go }: { state: State; money: (n: number) => string
         </p>
         <Button className="mt-4 shadow-glow" onClick={() => go("autopilot")}><Workflow /> Open Autopilot</Button>
       </div>
+
+      <section className="rounded-2xl border bg-card p-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Collection pulse</p>
+        <h3 className="mb-3 mt-1 font-semibold">Today's collection</h3>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Stat label="Overdue" value={money(due.reduce((s, d) => s + d.balance, 0))} tone="destructive" />
+          <Stat label="Due today" value={money(dueToday.reduce((s, c) => s + balanceOf(c), 0))} />
+          <Stat label="Promised" value={money(promised.reduce((s, c) => s + balanceOf(c), 0))} tone="primary" />
+          <Stat label="Paid today" value={money(receivedToday)} tone="accent" />
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-xl border bg-secondary/50 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Bell className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Follow-ups today</p>
+              <p className="text-sm">{due.length + dueToday.length ? `${due.length + dueToday.length} customers ko yaad dehani hai` : "You're all caught up for now"}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={() => go("autopilot")} aria-label="View follow-ups"><ArrowUpRight /></Button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border bg-card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Keep an eye on</p>
+            <h3 className="mt-1 font-semibold">Customers to follow up</h3>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => go("customers")}>All customers <ArrowUpRight /></Button>
+        </div>
+        {followUps.length === 0 ? (
+          <div className="flex flex-col items-center py-8 text-center">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-secondary text-success"><Check className="h-6 w-6" /></div>
+            <p className="mt-3 font-semibold">Aaj koi pending payment nahi!</p>
+            <p className="text-sm text-muted-foreground">Shabash — filhaal sab customers up to date hain.</p>
+          </div>
+        ) : (
+          followUps.map((c) => (
+            <div key={c.id} className="flex items-center justify-between border-t py-3 text-sm first:border-t-0">
+              <div>
+                <p className="font-semibold">{c.name}</p>
+                <p className="text-xs text-muted-foreground">{daysSinceLastPayment(c)}d since payment{c.promiseDate ? ` · Promise ${c.promiseDate}` : ""}</p>
+              </div>
+              <span className="font-display font-bold text-primary">{money(balanceOf(c))}</span>
+            </div>
+          ))
+        )}
+      </section>
+
       <div className="rounded-2xl border bg-card p-4">
         <h3 className="mb-3 font-semibold">Top balances</h3>
         {[...state.customers].sort((a, b) => balanceOf(b) - balanceOf(a)).slice(0, 5).map((c) => (
@@ -124,6 +185,7 @@ function Home({ state, money, go }: { state: State; money: (n: number) => string
           </div>
         ))}
       </div>
+      <p className="hidden">{collected}{pending}</p>
     </div>
   );
 }
