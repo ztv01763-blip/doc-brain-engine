@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, Check, LayoutDashboard, MessageCircle, Phone, Plus, Settings2, Users, Workflow, X, Zap } from "lucide-react";
+import { ArrowUpRight, Bell, Bot, Check, LayoutDashboard, MessageCircle, Phone, Plus, Settings2, Users, Workflow, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
@@ -96,9 +96,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "pr
 
 function Home({ state, money, go }: { state: State; money: (n: number) => string; go: (t: Tab) => void }) {
   const total = state.customers.reduce((s, c) => s + Math.max(0, balanceOf(c)), 0);
-  const collected = state.customers.flatMap((c) => c.entries).filter((e) => e.type === "payment").reduce((s, e) => s + e.amount, 0);
   const due = findDue(state.customers, state.settings);
-  const pending = state.queue.filter((q) => q.status === "pending").length;
 
   const today = new Date().toDateString();
   const isToday = (d: string) => new Date(d).toDateString() === today;
@@ -185,7 +183,6 @@ function Home({ state, money, go }: { state: State; money: (n: number) => string
           </div>
         ))}
       </div>
-      <p className="hidden">{collected}{pending}</p>
     </div>
   );
 }
