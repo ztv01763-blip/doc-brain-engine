@@ -195,7 +195,7 @@ function Customers({ state, update, money }: { state: State; update: Upd; money:
   const list = state.customers.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.includes(q));
 
   const add = () => {
-    if (!name.trim()) return toast.error("Naam likhein");
+    if (!name.trim()) { toast.error("Naam likhein"); return; }
     update((s) => ({ ...s, customers: [{ id: uid(), name: name.trim(), phone: normalizePhone(phone), entries: [] }, ...s.customers] }));
     setName(""); setPhone(""); toast.success("Customer added");
   };
@@ -222,9 +222,13 @@ function CustomerRow({ c, money, open, toggle, update }: { c: Customer; money: (
   const patch = (fn: (c: Customer) => Customer) => update((s) => ({ ...s, customers: s.customers.map((x) => (x.id === c.id ? fn(x) : x)) }));
   const addEntry = (type: "credit" | "payment") => {
     const n = Number(amt);
-    if (!(n > 0)) return toast.error("Sahi amount likhein");
-    if (type === "payment" && n > bal) return toast.error("Payment balance se zyada hai");
-    patch((x) => ({ ...x, entries: [...x.entries, { id: uid(), type, amount: n, date: new Date().toISOString() }], promiseDate: type === "payment" && n === bal ? undefined : x.promiseDate }));
+    if (!(n > 0)) { toast.error("Sahi amount likhein"); return; }
+    if (type === "payment" && n > bal) { toast.error("Payment balance se zyada hai"); return; }
+    patch((x) => {
+      const next: Customer = { ...x, entries: [...x.entries, { id: uid(), type, amount: n, date: new Date().toISOString() }] };
+      if (type === "payment" && n === bal) delete next.promiseDate;
+      return next;
+    });
     setAmt(""); toast.success(type === "credit" ? "Udhaar recorded" : "Payment recorded");
   };
   return (
