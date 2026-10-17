@@ -247,7 +247,7 @@ function CustomerRow({ c, money, open, toggle, update }: { c: Customer; money: (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Promise date</span>
             <Input className="w-44" type="date" value={promise} onChange={(e) => setPromise(e.target.value)} />
-            <Button variant="outline" onClick={() => { patch((x) => ({ ...x, promiseDate: promise || undefined })); toast.success("Promise saved"); }}>Save</Button>
+            <Button variant="outline" onClick={() => { patch((x) => { const { promiseDate: _p, ...rest } = x; return promise ? { ...rest, promiseDate: promise } : rest; }); toast.success("Promise saved"); }}>Save</Button>
             <Button variant="ghost" className="text-destructive" onClick={() => update((s) => ({ ...s, customers: s.customers.filter((x) => x.id !== c.id) }))}>Delete</Button>
           </div>
           <div className="max-h-48 overflow-auto text-sm">

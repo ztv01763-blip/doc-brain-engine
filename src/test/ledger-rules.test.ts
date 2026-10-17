@@ -17,7 +17,7 @@ describe("automation rules", () => {
   });
   it("flags missed promise regardless of days", () => {
     const cust = c({ promiseDate: "2026-10-16", entries: [{ id: "1", type: "credit", amount: 100, date: new Date(now - DAY).toISOString() }] });
-    expect(findDue([cust], { overdueDays: 7, minBalance: 500 }, now)[0].reason).toContain("promise");
+    expect(findDue([cust], { overdueDays: 7, minBalance: 500 }, now)[0]!.reason).toContain("promise");
   });
   it("normalizes Pakistani local numbers to +92", () => {
     expect(normalizePhone("0300-1234567")).toBe("+923001234567");
